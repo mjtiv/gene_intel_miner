@@ -1,0 +1,415 @@
+# ================================================
+# Gene Intel Miner — Expanded (.aix)
+# Version: 0.3.4
+# AIX_SPEC_VERSION: 1.0
+# Author: You (MJT IV) — 2025-08-08
+# Description:
+#   Rapid triage of gene targets with live lookups and auditable outputs.
+#   Extends v0.2.1 with richer schema fields for mechanism, biomarkers,
+#   companion diagnostics, trial IDs, exclusivity, selectivity, and recent label changes.
+#   v0.3.1 adds a UX note clarifying DrugBank licensed/VPN access.
+# ================================================
+
+meta:
+  name: "Gene Intel Miner"
+  version: "0.3.4"
+  description: |
+    Pulls structured intel for a list of genes and outputs a decision-ready table
+    (.csv/.xlsx) + audit_log.json. Optimized for speed and reproducibility.
+    Includes a note on DrugBank licensed access.
+  author: "M. Joseph Tomlinson IV (USPTO Reg. 83,522)"
+  license_note: |
+    Only use open/public sources by default. DrugBank and other licensed sources are
+    OFF unless explicitly enabled with user-provided credentials/licenses.
+    Most pharma companies with a DrugBank license will have VPN-based access that
+    enables it automatically when running inside their network.
+
+ux_notes:
+  preflight:
+    description: |
+      NOTE: Depth modes depend on live external APIs (OpenTargets, ClinicalTrials.gov, FDA, etc.). API performance and availability may vary — runs can fail if a source is slow or buggy.
+      Before running, the engine estimates runtime from depth_mode and gene count.
+      If len(gene_list) exceeds mode_presets.*.max_genes, prompt user to switch modes
+      or auto-trim to the listed columns for the selected mode.
+
+runtime:
+  mode: "live"           # values: live | dry_run
+  concurrency: 3          # parallel gene workers
+  request_timeout_sec: 25
+  retry_policy:
+    max_retries: 2
+    backoff_seconds: 2
+
+inputs:
+  prompt_user: true
+  fields:
+    data_source_mode:
+      type: string
+      required: false
+      default: "live"
+      allowed: ["local", "live"]
+      description: |
+        Choose 'local' for instant knowledge-based fill (faster, may be outdated) or 'live' for real-time API lookups (slower, current, with citations).
+    depth_mode:
+      type: string
+      required: false
+      default: "standard"
+      allowed: ["fast", "standard", "deep"]
+      description: |
+        fast: good for ≤50 genes (core intel only).
+        standard: good for ≤20 genes (adds biomarkers & diagnostics).
+        deep: good for ≤5 genes (full schema incl. patents/labels).
+    gene_list:
+      type: list
+      required: true
+      description: "Comma-separated HGNC symbols (e.g., TP53, EGFR, PIK3CA)."
+    disease_context:
+      type: string
+      required: false
+      default: ""
+      description: "Optional indication to frame summaries (e.g., NSCLC)."
+    date_cutoff:
+      type: date
+      required: false
+      default: ""
+      format: "YYYY-MM-DD"
+      description: "Ignore evidence newer than this date, if set."
+    export_name:
+      type: string
+      required: false
+      default: "gene_intel"
+    toggles:
+      type: object
+      required: false
+      default:
+        use_drugbank: false
+        use_pubmed: true
+        use_opentargets: true
+        use_ensembl: true
+        use_uniprot: true
+        use_chembl: true
+        use_ctgov: true
+        use_fda_labels: true
+        use_orange_book: true
+      description: "Source enable/disable flags."
+
+output:
+  files:
+    - type: table
+      formats: [csv, xlsx]
+      base_name: "${inputs.export_name}"
+    - type: json
+      role: audit_log
+      base_name: "${inputs.export_name}_audit_log"
+  table_schema_order:
+    - Gene
+    - Druggability_Notes
+    - Mechanism_of_Action
+    - Known_Drugs_On_Market
+    - Highest_Clinical_Stage
+    - Failed_Trials_Notable
+    - Safety_Flags_Key
+    - Key_Biomarkers
+    - Companion_Diagnostics
+    - Top_Trial_IDs
+    - Patent_Exclusivity_Expiry
+    - Selectivity_Profile
+    - Recent_Label_Changes
+    - Top_References
+    - Confidence_0_1
+
+schema:
+  columns:
+    Gene: {type: string}
+    Druggability_Notes: {type: string}
+    Mechanism_of_Action: {type: string}
+    Known_Drugs_On_Market: {type: string}
+    Highest_Clinical_Stage: {type: string}
+    Failed_Trials_Notable: {type: string}
+    Safety_Flags_Key: {type: string}
+    Key_Biomarkers: {type: string}
+    Companion_Diagnostics: {type: string}
+    Top_Trial_IDs: {type: string}
+    Patent_Exclusivity_Expiry: {type: string}
+    Selectivity_Profile: {type: string}
+    Recent_Label_Changes: {type: string}
+    Top_References: {type: string}
+    Confidence_0_1: {type: number, min: 0.0, max: 1.0}
+
+sources:
+mode_presets:
+  fast:
+    max_genes: 50
+    columns:
+      - Gene
+      - Mechanism_of_Action
+      - Known_Drugs_On_Market
+      - Highest_Clinical_Stage
+      - Top_Trial_IDs
+    sources_enabled:
+      use_pubmed: false
+      use_fda_labels: false
+      use_orange_book: false
+      use_ctgov: true
+      use_opentargets: true
+      use_ensembl: true
+      use_uniprot: true
+      use_chembl: true
+  standard:
+    max_genes: 20
+    columns:
+      - Gene
+      - Mechanism_of_Action
+      - Known_Drugs_On_Market
+      - Highest_Clinical_Stage
+      - Top_Trial_IDs
+      - Key_Biomarkers
+      - Companion_Diagnostics
+      - Safety_Flags_Key
+    sources_enabled:
+      use_pubmed: true
+      use_fda_labels: false
+      use_orange_book: false
+      use_ctgov: true
+      use_opentargets: true
+      use_ensembl: true
+      use_uniprot: true
+      use_chembl: true
+  deep:
+    max_genes: 5
+    columns: [ALL]  # interpret as all schema fields
+    sources_enabled:
+      use_pubmed: true
+      use_fda_labels: true
+      use_orange_book: true
+      use_ctgov: true
+      use_opentargets: true
+      use_ensembl: true
+      use_uniprot: true
+      use_chembl: true
+
+  # Public/Free defaults
+  ensembl: {enabled: ${inputs.toggles.use_ensembl}, purpose: "ID normalization, gene metadata"}
+  uniprot: {enabled: ${inputs.toggles.use_uniprot}, purpose: "protein summary, function, pathways"}
+  opentargets: {enabled: ${inputs.toggles.use_opentargets}, purpose: "evidence, associations, MoA, biomarkers"}
+  chembl: {enabled: ${inputs.toggles.use_chembl}, purpose: "drug-target mappings, clinical phase"}
+  fda_labels: {enabled: ${inputs.toggles.use_fda_labels}, purpose: "approved indications, safety, label changes, companion Dx"}
+  ctgov: {enabled: ${inputs.toggles.use_ctgov}, purpose: "trial IDs (NCT), phases, statuses"}
+  orange_book: {enabled: ${inputs.toggles.use_orange_book}, purpose: "patent & exclusivity dates for approved drugs"}
+  pubmed: {enabled: ${inputs.toggles.use_pubmed}, purpose: "recent reviews, selectivity, key references"}
+  # Licensed/Off by default
+  drugbank: {enabled: ${inputs.toggles.use_drugbank}, purpose: "extra drug details; requires license"}
+
+playbook:
+  steps:
+    - id: validate_inputs
+      action: ensure
+      args:
+        checks:
+          - condition: "${inputs.gene_list} length > 0"
+            on_fail: "Prompt user: 'Provide at least one HGNC symbol.'"
+
+    - id: normalize_symbols
+      action: map_each_gene
+      args:
+        tasks:
+          - use: ensembl
+            do: fetch_gene_id
+            out: ensembl_id
+          - use: uniprot
+            do: fetch_uniprot_id
+            out: uniprot_id
+        on_error: set_field("Gene", original_symbol)
+
+    - id: gather_label_and_drugs
+      action: map_each_gene
+      args:
+        when: sources.fda_labels.enabled
+        tasks:
+          - use: fda_labels
+            do: fetch_label_summaries
+            out:
+              Mechanism_of_Action
+              Safety_Flags_Key
+              Recent_Label_Changes
+              Companion_Diagnostics
+          - use: chembl
+            do: fetch_known_drugs_and_phase
+            out:
+              Known_Drugs_On_Market
+              Highest_Clinical_Stage
+        fallback:
+          - use: opentargets
+            do: infer_drugs_and_stage
+            out:
+              Known_Drugs_On_Market
+              Highest_Clinical_Stage
+
+    - id: gather_trials
+      action: map_each_gene
+      args:
+        when: sources.ctgov.enabled
+        tasks:
+          - use: ctgov
+            do: fetch_top_trials
+            params: {limit: 3, prefer_phases: ["3","2/3","2"]}
+            out: Top_Trial_IDs
+
+    - id: biomarkers_and_selectivity
+      action: map_each_gene
+      args:
+        tasks:
+          - use: opentargets
+            do: fetch_biomarkers
+            out: Key_Biomarkers
+          - use: pubmed
+            do: summarize_selectivity
+            out: Selectivity_Profile
+
+    - id: exclusivity
+      action: map_each_gene
+      args:
+        when: sources.orange_book.enabled
+        tasks:
+          - use: orange_book
+            do: fetch_exclusivity_dates
+            out: Patent_Exclusivity_Expiry
+
+    - id: failures
+      action: map_each_gene
+      args:
+        tasks:
+          - use: ctgov
+            do: summarize_failures
+            out: Failed_Trials_Notable
+
+    - id: druggability_and_confidence
+      action: map_each_gene
+      args:
+        tasks:
+          - use: rule_engine
+            do: compose_druggability_notes
+            in:
+              stage: Highest_Clinical_Stage
+              drugs: Known_Drugs_On_Market
+              mechanism: Mechanism_of_Action
+              biomarkers: Key_Biomarkers
+            out: Druggability_Notes
+          - use: rule_engine
+            do: score_confidence
+            in:
+              sources_present:
+                - fda_labels
+                - chembl
+                - ctgov
+                - opentargets
+                - pubmed
+                - orange_book
+              recency: Recent_Label_Changes
+              failures: Failed_Trials_Notable
+            out: Confidence_0_1
+
+    - id: references
+      action: map_each_gene
+      args:
+        tasks:
+          - use: reference_builder
+            do: build_top_refs
+            in:
+              preferred_order: [fda_labels, ctgov, chembl, opentargets, pubmed, orange_book]
+              max_refs: 5
+            out: Top_References
+
+    - id: date_filter
+      action: map_each_gene
+      args:
+        when: "${inputs.date_cutoff} != ''"
+        tasks:
+          - use: filter_by_date
+            do: apply
+            in:
+              date_cutoff: "${inputs.date_cutoff}"
+
+    - id: assemble_outputs
+      action: finalize_table
+      args:
+        schema_order: ${output.table_schema_order}
+        on_missing:
+          set_empty: [Mechanism_of_Action, Key_Biomarkers, Companion_Diagnostics, Top_Trial_IDs,
+                      Patent_Exclusivity_Expiry, Selectivity_Profile, Recent_Label_Changes]
+
+    - id: write_files
+      action: write_outputs
+      args:
+        table_formats: ${output.files[0].formats}
+        base_name: ${output.files[0].base_name}
+        audit_log_name: ${output.files[1].base_name}
+        include:
+          - inputs
+          - sources_used
+          - timestamps
+          - per_field_citations
+
+safety_and_compliance:
+  notes:
+    - "DrugBank and other licensed sources remain OFF unless the user has rights."
+    - "Respect robots.txt / rate limits; back off on HTTP 429."
+    - "Do not store raw PDFs unless user requests a Deep Dive Pack."
+  pii: "No patient-level data is fetched or stored."
+
+ux:
+  prompts:
+    ask_for_genes: |
+      Provide genes as comma-separated HGNC symbols (e.g., TP53, EGFR, PIK3CA).
+    confirm_sources: |
+      Using public sources by default (FDA labels, ChEMBL, OpenTargets, ClinicalTrials.gov, PubMed, Orange Book).
+      Licensed sources (e.g., DrugBank) are OFF unless enabled.
+      NOTE: If your organization has a DrugBank license, running this inside your company VPN
+      may automatically grant access when you toggle drugbank=on.
+      Proceed? (yes/no)
+    confirm_run: |
+      Run mode: ${runtime.mode}. Export base name: ${inputs.export_name}. Start now? (yes/no)
+
+examples:
+  run_minimal:
+    gene_list: [TP53, EGFR, PIK3CA]
+    export_name: test_run
+  run_with_context_and_cutoff:
+    gene_list: [BRAF, KRAS, IDH1]
+    disease_context: GBM
+    date_cutoff: 2025-06-30
+    export_name: gbm_panel_0630
+
+# End of file
+
+
+      NOTE: Depth modes depend on live external APIs (OpenTargets, ClinicalTrials.gov, FDA, etc.).
+      API speed, uptime, and data quality vary — runs may fail or crash if a source is slow, buggy, or down.
+
+# --- Added in v0.3.4: run legend for clarity ---
+output:
+  annotations:
+    - key: Run_Mode
+      value: "${inputs.data_source_mode}"
+    - key: Run_Timestamp
+      value: "${runtime.timestamp}"
+  legends:
+    - text: |
+        This table was generated in **${inputs.data_source_mode}** mode.
+        - local: fast, large lists OK, may be outdated; no live API calls.
+        - live: slower, fully up-to-date; live API calls with citations.
+
+
+# --- Added examples for data_source_mode (v0.3.4) ---
+examples:
+  run_local_large_list:
+    gene_list: [TP53, EGFR, PIK3CA, KRAS, BRAF, IDH1, ALK, ROS1, MET, RET]
+    depth_mode: deep
+    data_source_mode: local
+    export_name: local_mass_scan
+  run_live_curated:
+    gene_list: [EGFR, ALK, MET]
+    disease_context: NSCLC
+    depth_mode: deep
+    data_source_mode: live
+    export_name: nsclc_live_deep
