@@ -123,3 +123,21 @@ Once parsed, the runner simply **maps your answers to API calls**, waits for res
 - **Deep mode** — adds trial phases, label changes, patent/exclusivity info, expanded selectivity profiles, and PMA-level CDx details.
 - If a source is slow or unreachable, the field may be blank in that run but can be filled in later by rerunning.
 
+
+---
+
+## Data Source Modes (v0.3.4)
+Set `data_source_mode` when you run:
+
+- `local` — **fast triage for huge lists.** Uses ChatGPT’s built‑in biomedical knowledge and session context. No live API calls; may be outdated; no per‑cell citations.
+- `live` — **fully up‑to‑date deep dive.** Calls OpenTargets, ClinicalTrials.gov, FDA labels/PMA, PubMed, etc. Slower; includes citations and fresh label/trial data.
+
+**Recommended workflow**
+1. **Local (fast triage):** run hundreds/thousands of genes to shortlist hits.
+2. **Live (deep dive):** re-run the top 5–20 genes with `data_source_mode: live` for current trials, labels, and patents.
+
+**Example**
+```text
+Run with: TP53, EGFR, PIK3CA — mode: deep — data_source_mode: local
+```
+
