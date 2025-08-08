@@ -136,6 +136,23 @@ Set `data_source_mode` when you run:
 1. **Local (fast triage):** run hundreds/thousands of genes to shortlist hits.
 2. **Live (deep dive):** re-run the top 5–20 genes with `data_source_mode: live` for current trials, labels, and patents.
 
+---
+
+### Local vs Live Mode — Data Freshness
+
+- **Local mode**  
+  Uses ChatGPT’s built-in biomedical knowledge and prior session context.  
+  ⚡ Instant, can handle huge gene lists.  
+  📅 Data reflects what was available at the time of model training — may be outdated.  
+  ❌ No real-time API calls or per-cell citations.
+
+- **Live mode**  
+  Queries external databases (OpenTargets, ClinicalTrials.gov, FDA labels/PMA, PubMed, etc.) at run time.  
+  ⏳ Slower, limited by API speeds and rate limits.  
+  ✅ Fully up-to-date, with citations and source timestamps.
+
+---
+
 **Example**
 ```text
 Run with: TP53, EGFR, PIK3CA — mode: deep — data_source_mode: local
