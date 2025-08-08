@@ -88,3 +88,29 @@ See [USAGE.md](USAGE.md) for full instructions.
 ## License
 This workflow is intended for research and informational purposes.  
 Check each API's terms of use before redistributing or storing data.
+
+
+## Mode & Column Mapping
+
+| Field / Column | Fast Mode | Standard Mode | Deep Mode | Primary Data Sources |
+|---|---|---|---|---|
+| **Gene** | ✅ | ✅ | ✅ | HGNC, internal list |
+| **Mechanism of Action** | ✅ | ✅ | ✅ | OpenTargets, NCBI Gene, PubMed |
+| **On-market targeted drugs** | ✅ (basic) | ✅ (with drug names) | ✅ (with generation/class) | FDA Labels, OpenTargets, ChEMBL, PubMed |
+| **Drug Class** | ❌ | ✅ | ✅ | ChEMBL, PubMed, literature |
+| **Known failed/terminated drugs** | ❌ | ✅ | ✅ | ClinicalTrials.gov, PubMed |
+| **Companion Diagnostics** | ❌ | ✅ | ✅ (with PMA IDs) | FDA PMA database, manufacturer sites |
+| **Top trial IDs** | ❌ | ✅ | ✅ (with phases and NEJM links if available) | ClinicalTrials.gov |
+| **Trial Phases** | ❌ | ❌ | ✅ | ClinicalTrials.gov |
+| **Recent Label Changes** | ❌ | ❌ | ✅ | FDA Drug Label database |
+| **Selectivity Profile** | ❌ | ✅ (basic) | ✅ (detailed) | ChEMBL, OpenTargets |
+| **Patent / Exclusivity Notes** | ❌ | ❌ | ✅ | FDA Orange Book |
+| **Key Biomarkers** | ❌ | ✅ | ✅ | OpenTargets, literature |
+| **Companion Diagnostics Notes** | ❌ | ✅ | ✅ (expanded) | FDA PMA, manufacturer docs |
+
+**Notes:**
+- **Fast mode** — minimal, quick-scan fields for many genes; skips heavy API calls like ClinicalTrials.gov full trial metadata or Orange Book lookups.
+- **Standard mode** — adds drug class detail, failed drugs, biomarkers, CDx, and top trial IDs.
+- **Deep mode** — adds trial phases, label changes, patent/exclusivity info, expanded selectivity profiles, and PMA-level CDx details.
+- If a source is slow or unreachable, the field may be blank in that run but can be filled in later by rerunning.
+
