@@ -1,3 +1,5 @@
+**Note:** This `.aix` workflow runs directly inside ChatGPT with `.aix` parsing enabled. No local setup is needed — simply load the file, choose `local` or `live` mode, and follow the prompts.
+
 # Gene Intel Miner — Live Run Instructions
 
 ## Purpose
@@ -45,11 +47,11 @@ Once parsed, the runner simply **maps your answers to API calls**, waits for res
 
 ## Step-by-Step Usage
 
-1. **Drop the `.aix` file into your environment**  
-   Make sure your runner (Python or another `.aix`-aware host) can read the file.
+1. **Drop the `.aix` file into ChatGPT**  
+   Make sure your runner (Python or another `.aix`-aware host) can read the file (Grok most likely will not work).
 
 2. **Run the parser and prompt**  
-   Example in ChatGPT or your runner:
+   Example in ChatGPT or your runner (type):
    ```
    Parse this .aix file and run it live — prompt me for inputs, fetch the data, and then format the full results.
    ```
@@ -135,23 +137,6 @@ Set `data_source_mode` when you run:
 **Recommended workflow**
 1. **Local (fast triage):** run hundreds/thousands of genes to shortlist hits.
 2. **Live (deep dive):** re-run the top 5–20 genes with `data_source_mode: live` for current trials, labels, and patents.
-
----
-
-### Local vs Live Mode — Data Freshness
-
-- **Local mode**  
-  Uses ChatGPT’s built-in biomedical knowledge and prior session context.  
-  ⚡ Instant, can handle huge gene lists.  
-  📅 Data reflects what was available at the time of model training — may be outdated.  
-  ❌ No real-time API calls or per-cell citations.
-
-- **Live mode**  
-  Queries external databases (OpenTargets, ClinicalTrials.gov, FDA labels/PMA, PubMed, etc.) at run time.  
-  ⏳ Slower, limited by API speeds and rate limits.  
-  ✅ Fully up-to-date, with citations and source timestamps.
-
----
 
 **Example**
 ```text
