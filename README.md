@@ -47,7 +47,7 @@ Run with: TP53, EGFR — mode: deep — context: (none)
 ---
 
 ## Usage
-1. Drop this file in ChatGPT.
+1. Drop this file into ChatGPT.
 2. Type the following command:
 ```
 Parse this .aix file and run it live — prompt me for inputs, fetch the data, and then format the full results.
