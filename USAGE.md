@@ -143,3 +143,17 @@ Set `data_source_mode` when you run:
 Run with: TP53, EGFR, PIK3CA — mode: deep — data_source_mode: local
 ```
 
+---
+
+**Hallucination Risk & Mitigation**  
+In `local` mode, ChatGPT relies on its internal knowledge. For genes with conflicting or sparse public information, outputs may vary between runs (“hallucination” risk).  
+
+**Suggested mitigation:**  
+- Re-run the same query **5–6 times**.  
+- Compare outputs across runs.  
+- Flag or reconcile fields that differ before making downstream decisions.  
+
+When using `live` mode, hallucination risk is reduced because results come directly from cited, up-to-date sources. However, API or source errors can still occur — always validate critical fields.
+
+
+
