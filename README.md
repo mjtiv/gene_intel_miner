@@ -11,6 +11,11 @@ The workflow is optimized for:
 - **Reproducibility** — consistent schema, auditable logs.
 - **Flexibility** — run any HGNC gene list with optional disease context and date cutoffs.
 
+> **Known Issue (v0.3.4)**  
+> The `Mechanism_of_Action` field currently merges **gene function** and **therapeutic MoA** into a single description.  
+> This was an accidental issue, but it has been kept in the early proof-of-concept release so that caveats and real-world hiccups remain visible.  
+> Future versions will split this into two distinct fields for clarity.
+
 ---
 
 ## Features
